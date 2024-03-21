@@ -1,5 +1,6 @@
 import logging
 import typing
+import datetime as dt
 
 import requests
 
@@ -210,3 +211,38 @@ def __validate_technical_indicators_time_delta(value: str) -> str:
         logging.error(
             f"Invalid time_delta value: {value}.  Valid options: {valid_values}"
         )
+
+
+def __query_dates_generator(interval, from_date=None, to_date=None):
+    """
+    A generator that yields a dictionary {"from", "to"} covering the range from start_date to end_date.
+    Each range is interval apart, except the remainder at the end. If from_date or to_date date is not provided,
+    function returns the same date(s) and/or None.
+
+    :param from_date: The start date as a datetime.date object or str (YYYY-MM-DD).
+    :param to_date: The end date as a datetime.date object or str (YYYY-MM-DD).
+    :param interval: Number of days for each date range segment.
+    :return: Yields (from_date, to_date) tuples as str (YYYY-MM-DD).
+    """
+    query_dates = {}
+
+    if isinstance(from_date, str):
+        from_date = dt.datetime.strptime(from_date, '%Y-%m-%d')
+    if isinstance(to_date, str):
+        to_date = dt.datetime.strptime(to_date, '%Y-%m-%d')
+
+    if from_date is None or to_date is None:
+        if from_date:
+            query_dates["from"] = from_date.strftime('%Y-%m-%d')
+        if to_date:
+            query_dates["to"] = to_date.strftime('%Y-%m-%d')
+        yield query_dates
+        return
+    
+    current_from_date = from_date
+    while current_from_date < to_date:
+        current_to_date = min(current_from_date + dt.timedelta(days=interval), to_date)
+        query_dates["from"] = current_from_date.strftime('%Y-%m-%d')
+        query_dates["to"] = current_to_date.strftime('%Y-%m-%d')
+        yield query_dates
+        current_from_date = current_to_date + dt.timedelta(days=1)

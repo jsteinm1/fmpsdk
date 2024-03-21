@@ -1,8 +1,10 @@
 import typing
+import logging
 
 from .settings import DEFAULT_LIMIT
-from .url_methods import __return_json_v3
+from .url_methods import __return_json_v3, __query_dates_generator
 
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def earning_calendar(
     apikey: str, from_date: str = None, to_date: str = None
@@ -10,21 +12,24 @@ def earning_calendar(
     """
     Query FMP /earning_calendar/ API.
 
-    Note: Between the "from" and "to" parameters the maximum time interval can be 3 months.
+    Note: API endpoint will be called multiple times if from_date to to_date exceeds 80 days.
     :param apikey: Your API key.
-    :param from_date: 'YYYY:MM:DD'
-    :param to_date: 'YYYY:MM:DD'
+    :param from_date (str | datetime): 'YYYY-MM-DD'
+    :param to_date (str | datetime): 'YYYY-MM-DD'
     :return: A list of dictionaries.
     """
     path = f"earning_calendar"
     query_vars = {
         "apikey": apikey,
     }
-    if from_date:
-        query_vars["from"] = from_date
-    if to_date:
-        query_vars["to"] = to_date
-    return __return_json_v3(path=path, query_vars=query_vars)
+
+    results = []
+    for query_dates in __query_dates_generator(80, from_date, to_date):
+        query_vars = query_vars | query_dates
+        query_data = __return_json_v3(path=path, query_vars=query_vars)
+        results.extend(query_data)
+
+    return results
 
 
 def historical_earning_calendar(
