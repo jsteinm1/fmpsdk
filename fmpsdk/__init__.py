@@ -8,6 +8,7 @@ from .alternative_data import (
 from .calendar import (
     dividend_calendar,
     earning_calendar,
+    earning_calendar_confirmed,
     economic_calendar,
     historical_earning_calendar,
     ipo_calendar,
@@ -153,6 +154,7 @@ __all__ = [
     "sec_filings",
     "press_releases",
     "earning_calendar",
+    "earning_calendar_confirmed",
     "historical_earning_calendar",
     "ipo_calendar",
     "stock_split_calendar",

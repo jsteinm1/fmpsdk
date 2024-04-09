@@ -227,9 +227,9 @@ def __query_dates_generator(interval, from_date=None, to_date=None):
     query_dates = {}
 
     if isinstance(from_date, str):
-        from_date = dt.datetime.strptime(from_date, '%Y-%m-%d')
+        from_date = dt.datetime.strptime(from_date, '%Y-%m-%d').date()
     if isinstance(to_date, str):
-        to_date = dt.datetime.strptime(to_date, '%Y-%m-%d')
+        to_date = dt.datetime.strptime(to_date, '%Y-%m-%d').date()
 
     if from_date is None or to_date is None:
         if from_date:
@@ -246,3 +246,39 @@ def __query_dates_generator(interval, from_date=None, to_date=None):
         query_dates["to"] = current_to_date.strftime('%Y-%m-%d')
         yield query_dates
         current_from_date = current_to_date + dt.timedelta(days=1)
+
+def __query_by_date_range(interval, path, query_vars, from_date=None, to_date=None, depth=0):
+    """Queries API by date range broken into equal length + remainder intervals. If a limit
+    is provided in query_vars and returned by api, function will call itself recursively to
+    divide and retry query
+
+    Args:
+        from_date (_type_): The start date as a datetime.date object or str (YYYY-MM-DD).
+        to_date (_type_): The start date as a datetime.date object or str (YYYY-MM-DD).
+        interval (int): number of days to subdivide query into
+        path (str): url path of api
+        query_vars (Dict[str,str...]): vars to include in query
+        depth (int, optional): Function recursion depth. Defaults to 0.
+
+    Returns:
+        List[Dict]: query data
+    """
+    results = []
+    for query_dates in __query_dates_generator(interval, from_date, to_date):
+        query_vars = query_vars | query_dates
+        query_data = __return_json_v4(path=path, query_vars=query_vars)
+        query_return_len = len(query_data)
+        if 'limit' in query_vars and query_return_len >= query_vars['limit'] and depth < 5:
+            logging.info(
+                f"Query depth {depth} dates: {query_dates} "
+                f"returned api limit {query_vars['limit']} results, retrying with shorter date range"
+            )
+            query_data = __query_by_date_range(interval/2, path, query_vars, query_dates["from"], query_dates["to"], depth+1)
+
+        logging.debug(
+            f"Query depth {depth} dates: {query_dates} "
+            f"returned {query_return_len} results"
+        )
+        results.extend(query_data)
+    
+    return results

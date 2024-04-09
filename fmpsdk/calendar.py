@@ -2,9 +2,9 @@ import typing
 import logging
 
 from .settings import DEFAULT_LIMIT
-from .url_methods import __return_json_v3, __query_dates_generator
+from .url_methods import __return_json_v3, __return_json_v4, __query_dates_generator, __query_by_date_range
 
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def earning_calendar(
     apikey: str, from_date: str = None, to_date: str = None
@@ -28,6 +28,33 @@ def earning_calendar(
         query_vars = query_vars | query_dates
         query_data = __return_json_v3(path=path, query_vars=query_vars)
         results.extend(query_data)
+
+    return results
+
+
+def earning_calendar_confirmed(
+    apikey: str, from_date: str = None, to_date: str = None
+) -> typing.Optional[typing.List[typing.Dict]]:
+    """
+    Query FMP /earning_calendar/ API.
+
+    Note: API endpoint will be called multiple times if from_date to to_date exceeds 80 days.
+    :param apikey: Your API key.
+    :param from_date (str | datetime): 'YYYY-MM-DD'
+    :param to_date (str | datetime): 'YYYY-MM-DD'
+    :return: A list of dictionaries.
+    """
+    path = f"earning-calendar-confirmed"
+    # endpoint has undocumented limit parameter with max 1000
+    limit = 1000
+    query_vars = {
+        "apikey": apikey,
+        "limit": limit
+    }
+
+    results = []
+    interval = 20
+    results = __query_by_date_range(interval, path, query_vars, from_date, to_date)
 
     return results
 
