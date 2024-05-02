@@ -906,18 +906,18 @@ def sec_filings(
 
 
 def press_releases(
-    apikey: str, symbol: str, limit: int = DEFAULT_LIMIT
+    apikey: str, symbol: str, page: int = 0
 ) -> typing.Optional[typing.List[typing.Dict]]:
     """
     Query FMP /press-releases/ API.
 
     :param apikey: Your API key.
     :param symbol: Company ticker.
-    :param limit: Number of rows to return.
+    :param page: page to return, default 0.
     :return: A list of dictionaries.
     """
     path = f"press-releases/{symbol}"
-    query_vars = {"apikey": apikey, "limit": limit}
+    query_vars = {"apikey": apikey, "page": page}
     return __return_json_v3(path=path, query_vars=query_vars)
 
 
